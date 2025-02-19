@@ -1,0 +1,29 @@
+name: pso
+channels:
+  - pytorch
+  - nvidia
+  - defaults
+dependencies:
+  - python==3.10.6
+  - pytorch==2.0.1
+  - torchvision==0.15.2
+  - pytorch-cuda=11.7
+  - torchaudio==2.0.2
+  - scipy
+  - pip:
+      - accelerate==0.27.2
+      - diffusers==0.27.0
+      - datasets==2.18.0
+      - transformers==4.38.1
+      - ftfy
+      - tensorboard
+      - Jinja2
+      - peft==0.11.1
+      - wandb
+      - bitsandbytes
+      - matplotlib
+      - openai_clip==1.0.1
+      - hpsv2
+      - ml-collections
+      - absl-py
+      - image-reward
