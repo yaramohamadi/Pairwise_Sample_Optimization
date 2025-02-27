@@ -1847,7 +1847,6 @@ def main(args):
                     1,
                 )
                 model_losses_w, model_losses_l = model_losses.chunk(2)
-                # model_diff = model_losses_w - model_losses_l
                 model_diff = model_losses_w - neg_defactor * model_losses_l
                 
                 if not args.loss_type == 'pso_db':
@@ -1882,13 +1881,7 @@ def main(args):
                 
                 if args.loss_type == "pso":
                     loss = -1 * F.logsigmoid(args.beta_pso * logits).mean()
-                # elif args.loss_type == "hinge":
-                #     loss = torch.relu(1 - args.beta_pso * logits).mean()
-                # elif args.loss_type == "ipo":
-                #     losses = (logits - 1 / (2 * args.beta_pso)) ** 2
-                #     loss = losses.mean()
                 elif args.loss_type == 'pso_db':
-                    # loss = -1 * F.logsigmoid(args.beta_pso * logits - args.gamma_pso).mean()
                     loss = torch.relu(1 - args.beta_pso * logits).mean()
                 else:
                     raise ValueError(f"Unknown loss type {args.loss_type}")
