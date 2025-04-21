@@ -4,6 +4,11 @@ USING PAIRWISE SAMPLE OPTIMIZATION](https://arxiv.org/pdf/2410.03190).
 
 ![alt text](assets/teaser_arrow.jpg)
 
+## Installation
+```
+conda env create -f environment.yaml
+```
+
 ## Fine-tuned Models
 ### Human Preference Tuning
 SDXL-DMD2: [huggingface models](https://huggingface.co/ZichenMiao/PSO/tree/main/SDXL_DMD2)
@@ -12,11 +17,6 @@ Usage (Evaluation on PickaPic-Test):
 ```
 cd human_preference_tuning
 accelerate launch eval_sdxl_dmd2.py
-```
-
-## Installation
-```
-conda env create -f environment.yaml
 ```
 
 ## Training
