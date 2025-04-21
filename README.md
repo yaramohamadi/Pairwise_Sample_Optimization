@@ -11,7 +11,7 @@ conda env create -f environment.yaml
 
 ## Fine-tuned Models
 ### Human Preference Tuning
-SDXL-DMD2: [huggingface models](https://huggingface.co/ZichenMiao/PSO/tree/main/SDXL_DMD2)
+SDXL-DMD2: [huggingface models](https://huggingface.co/ZichenMiao/PSO)
 
 Usage (Evaluation on PickaPic-Test):
 ```
