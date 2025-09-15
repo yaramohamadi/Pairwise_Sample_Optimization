@@ -12,7 +12,7 @@ export INSTANCE_DIR="dreambooth/dataset/${selected_subject}"
 export OUTPUT_DIR="./output"
 export VAE_PATH="madebyollin/sdxl-vae-fp16-fix"
 
-CUDA_VISIBLE_DEVICES=$1 accelerate launch --main_process_port 22157 train_pso_sdxl_turbo_dreambooth.py \
+CUDA_VISIBLE_DEVICES=0 accelerate launch --main_process_port 22157 personalization/train_pso_sdxl_turbo_dreambooth.py \
     --pretrained_model_name_or_path=$MODEL_NAME \
     --instance_data_dir=$INSTANCE_DIR \
     --pretrained_vae_model_name_or_path=$VAE_PATH \

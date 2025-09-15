@@ -13,6 +13,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 
+
+# --- pytree compat for torch<2.3 ---
+try:
+    from torch.utils import _pytree as _pt
+    if not hasattr(_pt, "register_pytree_node") and hasattr(_pt, "_register_pytree_node"):
+        _pt.register_pytree_node = _pt._register_pytree_node
+except Exception:
+    pass
+# -----------------------------------
+
+
+
 import argparse
 import gc
 import itertools
@@ -58,7 +70,21 @@ from diffusers import (
     StableDiffusionXLPipeline,
     UNet2DConditionModel,
 )
-from diffusers.loaders import StableDiffusionLoraLoaderMixin
+
+
+#from diffusers.loaders import StableDiffusionLoraLoaderMixin
+try:
+    # SDXL-specific mixin (older releases)
+    from diffusers.loaders import StableDiffusionXLLoraLoaderMixin as StableDiffusionLoraLoaderMixin
+except Exception:
+    try:
+        # Older SD 1.x/2.x mixin name
+        from diffusers.loaders import StableDiffusionLoraLoaderMixin
+    except Exception:
+        # Newer generic name; pipelines already include .load_lora_weights()
+        from diffusers.loaders import LoraLoaderMixin as StableDiffusionLoraLoaderMixin
+
+
 from diffusers.optimization import get_scheduler
 from diffusers.training_utils import _set_state_dict_into_text_encoder, cast_training_params, compute_snr
 from diffusers.utils import (
