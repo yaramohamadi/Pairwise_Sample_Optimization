@@ -162,9 +162,7 @@ def log_validation(
     global_step,
     is_final_validation=False,
 ):
-    logger.info(
-        f"Running validation..."
-    )
+    logger.info("Running validation...")
 
     unique_token = args.unique_token
     class_token = args.class_name
@@ -225,57 +223,75 @@ def log_validation(
             'a cube shaped {0} {1}'.format(unique_token, class_token)
         ]
 
-    # We train on the simplified learning objective. If we were previously predicting a variance, we need the scheduler to ignore it
-    scheduler_args = {}
-
+    # Move pipeline / config
     pipeline = pipeline.to(accelerator.device)
     pipeline.set_progress_bar_config(disable=True)
 
-    # run inference
-    generator = torch.Generator(device=accelerator.device).manual_seed(args.seed) if args.seed else None
-    # Currently the context determination is a bit hand-wavy. We can improve it in the future if there's a better
-    # way to condition it. Reference: https://github.com/huggingface/diffusers/pull/7126#issuecomment-1968523051
+    # Inference context
+    generator = torch.Generator(device=accelerator.device).manual_seed(args.seed) if getattr(args, "seed", None) else None
     if torch.backends.mps.is_available() or "playground" in args.pretrained_model_name_or_path:
         autocast_ctx = nullcontext()
     else:
         autocast_ctx = torch.autocast(accelerator.device.type)
 
-    val_images = []
-    with autocast_ctx:
-        for validation_prompt in validation_prompts:
-            images = [pipeline(validation_prompt, 
-                        generator=generator,
-                        num_inference_steps=4,
-                        guidance_scale=0.).images[0] for _ in range(args.num_validation_images)]
-            val_images.extend(images)
+    # === New behavior ===
+    # Always generate 4 images per prompt (override args.num_validation_images)
+    n_per_prompt = 4
 
+    # Keep both nested (per-prompt) and flat lists for logging/saving convenience
+    per_prompt_images = []  # List[List[PIL.Image]]
+    flat_images = []        # List[PIL.Image]
+
+    with autocast_ctx:
+        for prompt_idx, validation_prompt in enumerate(validation_prompts, start=1):
+            imgs = [
+                pipeline(
+                    validation_prompt,
+                    generator=generator,
+                    num_inference_steps=4,
+                    guidance_scale=0.0
+                ).images[0]
+                for _ in range(n_per_prompt)
+            ]
+            per_prompt_images.append(imgs)
+            flat_images.extend(imgs)
+
+    # === Logging ===
+    phase_name = "test" if is_final_validation else "validation"
     for tracker in accelerator.trackers:
-        phase_name = "test" if is_final_validation else "validation"
         if tracker.name == "tensorboard":
-            np_images = np.stack([np.asarray(img) for img in images])
+            # tensorboard expects a single NHWC stack; use flat_images for that
+            np_images = np.stack([np.asarray(img) for img in flat_images])
             tracker.writer.add_images(phase_name, np_images, global_step, dataformats="NHWC")
         if tracker.name == "wandb":
-            tracker.log(
-                {
-                    phase_name: [
-                        wandb.Image(image, caption=f"{i}: {validation_prompts[i]}") for i, image in enumerate(val_images)
-                    ]
-                }
-            )
+            # Log with informative captions including prompt index and sample index
+            wb_imgs = []
+            for p_idx, (prompt, imgs) in enumerate(zip(validation_prompts, per_prompt_images), start=1):
+                for s_idx, im in enumerate(imgs, start=1):
+                    cap = f"p_{p_idx:03d}/img_{s_idx:02d}: {prompt}"
+                    wb_imgs.append(wandb.Image(im, caption=cap))
+            tracker.log({phase_name: wb_imgs})
 
+    # === Saving ===
+    img_save_root = os.path.join(args.output_dir, f"gen_{global_step}")
+    os.makedirs(img_save_root, exist_ok=True)
+    print("Saving to...", img_save_root)
 
-    ## save images for validation
-    img_save_dir = os.path.join(args.output_dir, f'step_{global_step}')
-    os.makedirs(img_save_dir, exist_ok=True)
-    print('Saving to...', img_save_dir)
-    for i, image in enumerate(val_images):
-        image.save(os.path.join(img_save_dir, f'{i}.png'))
+    # Create p_001 ... p_025 and put 4 images inside each
+    for p_idx, imgs in enumerate(per_prompt_images, start=1):
+        subdir = os.path.join(img_save_root, f"p_{p_idx:03d}")
+        os.makedirs(subdir, exist_ok=True)
+        for s_idx, image in enumerate(imgs, start=1):
+            image.save(os.path.join(subdir, f"img_{s_idx:02d}.png"))
 
+    # Cleanup
     del pipeline
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
 
-    return images
+    # Keep return type consistent (flat list like before)
+    return flat_images
+
 
 
 def import_model_class_from_model_name_or_path(
@@ -1098,7 +1114,7 @@ def main(args):
         args.is_object = False
     else:
         args.is_object = True
-    args.run_name = os.path.join(f'Release_PSO_SDXL_Turbo_Lora{args.rank}_beta{args.beta_pso}_num_negs{args.num_negatives}', args.instance_name)
+    args.run_name = os.path.join(f'Release_PSO_SDXL_Turbo_Lora{args.rank}_beta{args.beta_pso}_num_negs{args.num_negatives}', f"{args.instance_name}_{args.class_name.replace(' ', '_')}")
     args.output_dir = os.path.join(args.output_dir, args.run_name)
 
     logging_dir = Path(args.output_dir, args.logging_dir)

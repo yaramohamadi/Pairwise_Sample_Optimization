@@ -4,15 +4,15 @@ class_token="teapot"
 
 echo "Training model for ${selected_subject} (${class_token})"
 
-instance_prompt="a photo of ${unique_token} ${class_token}"
-class_prompt="a photo of ${class_token}"
+instance_prompt="a ${unique_token} ${class_token}"
+class_prompt="a ${class_token}"
 
 export MODEL_NAME="stabilityai/sdxl-turbo"
 export INSTANCE_DIR="dreambooth/dataset/${selected_subject}"
 export OUTPUT_DIR="./output"
 export VAE_PATH="madebyollin/sdxl-vae-fp16-fix"
 
-CUDA_VISIBLE_DEVICES=$1 accelerate launch --main_process_port 22157 train_pso_sdxl_turbo_dreambooth.py \
+CUDA_VISIBLE_DEVICES=$1 accelerate launch --main_process_port 22157 personalization/train_pso_sdxl_turbo_dreambooth.py \
   --pretrained_model_name_or_path=$MODEL_NAME \
     --instance_data_dir=$INSTANCE_DIR \
     --pretrained_vae_model_name_or_path=$VAE_PATH \
@@ -29,7 +29,7 @@ CUDA_VISIBLE_DEVICES=$1 accelerate launch --main_process_port 22157 train_pso_sd
     --report_to="wandb" \
     --lr_scheduler="constant" \
     --lr_warmup_steps=0 \
-    --max_train_steps=800 \
+    --max_train_steps=1600 \
     --validation_steps=200 \
     --seed=0 \
     --do_edm_style_training \

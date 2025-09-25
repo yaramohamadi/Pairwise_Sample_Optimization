@@ -1,11 +1,11 @@
-unique_token="qwe"
+unique_token="prt"
 selected_subject="dog2"
 class_token="dog"
 
 echo "Training model for ${selected_subject} (${class_token})"
 
-instance_prompt="a photo of ${unique_token} ${class_token}"
-class_prompt="a photo of ${class_token}"
+instance_prompt="a ${unique_token} ${class_token}"
+class_prompt="a ${class_token}"
 
 export MODEL_NAME="stabilityai/sdxl-turbo"
 export INSTANCE_DIR="dreambooth/dataset/${selected_subject}"
